@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas of Crime in India</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F4F8;
+    --card:#FFFFFF;
+    --ink:#1A2233;
+    --ink-soft:#57607A;
+    --muted:#8A93AC;
+    --line:#E3E6ED;
+    --accent:#A24E3B;
+    --accent-bg:#F7EBE7;
+    --navy:#1E2A44;
+    --navy-soft:#EDF1F8;
+    --shadow: 0 6px 24px rgba(20,30,50,0.07);
+    --radius:12px;
+  }
+  * { box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:'IBM Plex Sans', -apple-system, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding:28px 32px 40px;
+  }
+  a{ color:inherit; }
+
+  /* ---------- Header ---------- */
+  .eyebrow{
+    font-size:11px; font-weight:600; letter-spacing:0.09em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:6px;
+  }
+  .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:20px; }
+  h1{ font-family:'Fraunces', serif; font-weight:600; font-size:36px; margin:0 0 8px 0; letter-spacing:-0.01em; }
+  .header-sub{ font-size:14px; color:var(--ink-soft); max-width:760px; line-height:1.5; margin:0; }
+  .theme-toggle{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--card);
+    cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:var(--ink-soft);
+    font-size:15px;
+  }
+  .header-rule{ height:2px; background:var(--ink); margin:18px 0 20px 0; opacity:0.9; }
+
+  /* ---------- Control bar ---------- */
+  .control-card{
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px 22px; margin-bottom:20px;
+    display:flex; flex-wrap:wrap; gap:22px 30px; align-items:flex-end;
+  }
+  .control-group{ display:flex; flex-direction:column; gap:8px; }
+  .control-label{ font-size:10.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
+  .pill-row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .pill{
+    font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; padding:6px 13px; border-radius:16px;
+    border:1px solid var(--line); background:var(--card); color:var(--ink-soft); cursor:pointer;
+    transition:background 0.12s, color 0.12s, border-color 0.12s; white-space:nowrap;
+  }
+  .pill:hover{ border-color:var(--navy); }
+  .pill.active{ background:var(--navy); border-color:var(--navy); color:#fff; font-weight:500; }
+  .pill.priority{ border-color:var(--accent); color:var(--accent); }
+  .pill.priority:hover{ background:var(--accent-bg); }
+  .pill.priority.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  .year-control{ display:flex; align-items:center; gap:12px; min-width:220px; }
+  #yearSlider{ flex:1; accent-color:var(--navy); cursor:pointer; }
+  .year-label{ font-family:'Fraunces', serif; font-weight:600; font-size:16px; min-width:40px; }
+
+  .search-group{ margin-left:auto; position:relative; }
+  #districtSearch{
+    border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-family:'IBM Plex Sans', sans-serif;
+    font-size:13px; width:220px; outline:none; color:var(--ink);
+  }
+  #districtSearch:focus{ border-color:var(--navy); }
+  #searchResults{
+    position:absolute; top:calc(100% + 6px); right:0; width:270px; background:var(--card); border-radius:8px;
+    box-shadow:var(--shadow); max-height:260px; overflow-y:auto; display:none; z-index:2000; border:1px solid var(--line);
+  }
+  #searchResults div{ padding:8px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--line); }
+  #searchResults div:last-child{ border-bottom:none; }
+  #searchResults div:hover{ background:var(--navy-soft); }
+  #searchResults .state-tag{ color:var(--muted); font-size:11.5px; }
+
+  /* ---------- Main layout ---------- */
+  .main-grid{ display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; }
+  .map-card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; }
+  #map{ height:560px; border-radius:8px; background:#E9EBF1; }
+  .legend-row{ display:flex; align-items:center; gap:14px; margin-top:14px; padding:0 4px; }
+  .legend-title{ font-size:11.5px; color:var(--ink-soft); font-weight:500; white-space:nowrap; }
+  .legend-gradient{ flex:1; height:10px; border-radius:5px; position:relative; }
+  .legend-ticks{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+  .legend-nodata{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); white-space:nowrap; }
+  .legend-nodata .swatch{ width:12px; height:12px; border-radius:3px; background:var(--nodata-fill, #E3E1DA);
+    background-image:repeating-linear-gradient(45deg, #CFCBC0 0, #CFCBC0 1px, transparent 1px, transparent 4px); }
+
+  .sidebar{ display:flex; flex-direction:column; gap:16px; }
+  .side-card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px; }
+  .side-card h2{ font-family:'Fraunces', serif; font-size:17px; font-weight:600; margin:0 0 3px 0; }
+  .side-card .side-sub{ font-size:11.5px; color:var(--muted); margin-bottom:14px; }
+  .back-link{ font-size:11.5px; color:var(--navy); cursor:pointer; margin-bottom:10px; display:inline-block; }
+  .back-link:hover{ text-decoration:underline; }
+
+  .stat-tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+  .stat-tile{ border-radius:8px; padding:10px 8px; text-align:left; }
+  .stat-tile:nth-child(1){ background:var(--navy-soft); }
+  .stat-tile:nth-child(2), .stat-tile:nth-child(3){ background:#F7F8FB; }
+  .stat-num{ font-family:'Fraunces', serif; font-weight:600; font-size:19px; line-height:1.1; }
+  .stat-label{ font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:3px; }
+
+  .section-label{ font-size:10.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:var(--ink-soft); margin:16px 0 8px 0; }
+  .section-label:first-child{ margin-top:0; }
+
+  .comp-bar{ display:flex; width:100%; height:12px; border-radius:4px; overflow:hidden; margin-bottom:8px; }
+  .comp-legend-row{ display:flex; align-items:center; gap:6px; font-size:11.5px; padding:2px 0; }
+  .comp-swatch{ width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+  .comp-pct{ margin-left:auto; font-family:'IBM Plex Mono', monospace; color:var(--ink-soft); font-size:11px; }
+
+  .rank-list{ list-style:none; margin:0; padding:0; font-size:12.5px; }
+  .rank-list li{ display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; border-top:1px solid var(--line); }
+  .rank-list li:first-child{ border-top:none; }
+  .rank-name{ font-weight:500; }
+  .rank-state{ color:var(--muted); font-size:10.8px; margin-left:4px; }
+  .rank-val{ font-family:'IBM Plex Mono', monospace; color:var(--ink-soft); flex-shrink:0; margin-left:8px; }
+  .rank-sep{ text-align:center; color:var(--muted); padding:3px 0; }
+
+  .note-box{ font-size:10.8px; color:var(--accent); background:var(--accent-bg); border-radius:6px; padding:5px 9px; margin-bottom:8px; display:inline-block; }
+  .trend-note{ font-size:10.5px; color:var(--muted); margin-top:4px; }
+  .compare-line{ font-size:11.5px; color:var(--ink-soft); margin-top:6px; }
+  .compare-line b{ color:var(--ink); }
+
+  .reading-text{ font-size:12px; color:var(--ink-soft); line-height:1.6; }
+
+  /* ---------- Definitions ---------- */
+  .defs-card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px 24px; margin-top:20px; }
+  .defs-card > .section-label{ margin-bottom:14px; }
+  .defs-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:12px; }
+  .def-item{ background:#F8F9FB; border:1px solid var(--line); border-radius:8px; padding:11px 13px; }
+  .def-name{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:12.5px; margin-bottom:4px; }
+  .def-dot{ width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+  .def-text{ font-size:11.3px; color:var(--ink-soft); line-height:1.5; }
+  .def-flag{ font-size:9.8px; color:var(--accent); font-weight:600; margin-top:4px; }
+
+  .footer-bar{ margin-top:16px; font-size:11px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px; }
+  .footer-bar b{ color:var(--ink-soft); }
+  .method-text{ font-size:11.3px; color:var(--ink-soft); line-height:1.6; margin-top:14px; }
+  .method-text p{ margin:6px 0; }
+  .method-text b{ color:var(--ink); }
+
+  @media (max-width: 980px){
+    .main-grid{ grid-template-columns:1fr; }
+    .search-group{ margin-left:0; width:100%; }
+    #districtSearch{ width:100%; }
+  }
+
+  .leaflet-popup-content-wrapper{ border-radius:8px; }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">District-level crime indicators</div>
+<div class="header-row">
+  <div>
+    <h1>Atlas of Crime in India</h1>
+    <p class="header-sub">District-level NCRB crime indicators on 2011 Census districts. Choose an indicator and year; click any district for its composition and trend.</p>
+  </div>
+</div>
+<div class="header-rule"></div>
+
+<div class="control-card">
+  <div class="control-group">
+    <span class="control-label">Indicator</span>
+    <div class="pill-row" id="indicatorPills"></div>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Priority views</span>
+    <div class="pill-row" id="priorityPills"></div>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Year</span>
+    <div class="year-control">
+      <input type="range" id="yearSlider" min="0" max="0" value="0" step="1">
+      <span class="year-label" id="yearLabel">—</span>
+    </div>
+  </div>
+  <div class="control-group search-group">
+    <span class="control-label">Find a district</span>
+    <input type="text" id="districtSearch" placeholder="Type a district name…" autocomplete="off">
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="map-card">
+    <div id="map"></div>
+    <div class="legend-row">
+      <span class="legend-title" id="legendTitle">Indicator</span>
+      <div style="flex:1;">
+        <div class="legend-gradient" id="legendGradient"></div>
+        <div class="legend-ticks" id="legendTicks"><span>min</span><span>mid</span><span>max</span></div>
+      </div>
+      <div class="legend-nodata"><span class="swatch"></span>no data</div>
+    </div>
+  </div>
+
+  <div class="sidebar" id="sidebar"></div>
+</div>
+
+<div class="defs-card">
+  <div class="section-label">Indicator definitions</div>
+  <div class="defs-grid" id="defsGrid"></div>
+  <div class="footer-bar" id="footerBar"></div>
+  <div class="method-text" id="methodText"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const COLORS = ['#EAF2FC','#C7DEF5','#96C2E8','#5E9FD6','#3679B8','#1F5590','#123863'];
+const NODATA_COLOR = '#E3E1DA';
+const COMP_CATEGORIES = [
+  { id:'crimetype_violent', label:'Violent', color:'#A24E3B' },
+  { id:'crimetype_property', label:'Property', color:'#3679B8' },
+  { id:'crimetype_against_women', label:'Against Women', color:'#7C5FA8' },
+  { id:'crimetype_economic', label:'Economic', color:'#3E8E6F' },
+  { id:'crimetype_other', label:'Other', color:'#C9A227' },
+];
+const PRIORITY_VIEWS = [
+  { label:'Highest Crime Burden', indicator:'total_crimes' },
+  { label:'Weakest Policing', indicator:'police_strength' },
+];
+// districts whose NCRB figure is a combined value shared with another polygon —
+// shown once in rankings, not twice, so the list doesn't imply two separate high counts.
+const MERGE_SUPPRESS = { '519':'Mumbai City + Suburban', '345':'Paschim + Purba Medinipur', '640':'North & Middle + South Andaman' };
+const MERGE_LABEL_OVERRIDE = { '518':'Mumbai (city + suburban)', '344':'Midnapore (undivided)', '639':'Andaman (islands, combined)' };
+
+let variablesMeta = {}, mapVariables = [];
+let indicatorIndex = {};      // variable -> year -> did -> value
+let districtSeries = {};      // did -> variable -> [{year,value}]
+let districtCompByYear = {};  // did -> year -> [{catId,value}]
+let districtMeta = {};        // did -> {name, state}
+let stateOfDistrict = {};
+let geoLayer = null, activeLayer = null;
+let currentIndicator = 'total_crimes';
+let currentYear = 2015;
+let currentBreaks = [];
+let selectedDistrict = null;
+
+function fmtValue(varId, value){
+  if (value === null || value === undefined) return '—';
+  const meta = variablesMeta[varId];
+  if (!meta) return value;
+  const numStr = Number(value).toLocaleString('en-IN', {minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals});
+  return meta.unit === '%' ? numStr + '%' : numStr;
+}
+function unitSuffix(varId){
+  const meta = variablesMeta[varId];
+  return meta && meta.unit === 'per 100k' ? ' /100k' : '';
+}
+
+function colorFor(value){
+  if (value === null || value === undefined) return NODATA_COLOR;
+  for (let i = 0; i < currentBreaks.length; i++){ if (value <= currentBreaks[i]) return COLORS[i]; }
+  return COLORS[COLORS.length - 1];
+}
+function computeBreaks(values){
+  const sorted = values.filter(v => v !== null && v !== undefined).sort((a,b)=>a-b);
+  if (sorted.length === 0) return [0,0,0,0,0,0];
+  const breaks = [];
+  for (let i = 1; i < COLORS.length; i++) breaks.push(sorted[Math.min(sorted.length-1, Math.floor(sorted.length*i/COLORS.length))]);
+  return breaks;
+}
+function median(sortedVals){
+  const n = sortedVals.length;
+  if (n===0) return null;
+  return n%2 ? sortedVals[(n-1)/2] : (sortedVals[n/2-1]+sortedVals[n/2])/2;
+}
+
+const map = L.map('map', {
+  zoomControl:false, attributionControl:false, minZoom:4, maxZoom:9,
+  zoomSnap:0.25, zoomDelta:0.5, wheelPxPerZoomLevel:120
+}).setView([22.8, 80.5], 4.6);
+L.control.zoom({ position:'bottomright' }).addTo(map);
+
+function styleFeature(feature){
+  const did = feature.properties.pc11_district_id;
+  const value = (indicatorIndex[currentIndicator]?.[currentYear] || {})[did];
+  return { fillColor: colorFor(value), weight:0.6, color:'#8892A6', fillOpacity: (value!=null) ? 0.88 : 0.55 };
+}
+function resetLayerStyle(layer){ geoLayer.resetStyle(layer); }
+function highlightLayer(layer){ layer.setStyle({ weight:2, color:var_ink(), fillOpacity:0.95 }); layer.bringToFront(); }
+function var_ink(){ return '#1A2233'; }
+
+function selectDistrict(did, layer){
+  if (activeLayer) resetLayerStyle(activeLayer);
+  activeLayer = layer; if (layer) highlightLayer(layer);
+  selectedDistrict = did;
+  renderSidebar();
+  if (layer) map.fitBounds(layer.getBounds(), { maxZoom:7, padding:[40,40] });
+}
+function clearSelection(){
+  if (activeLayer) resetLayerStyle(activeLayer);
+  activeLayer = null; selectedDistrict = null;
+  renderSidebar();
+}
+
+function onEachFeature(feature, layer){
+  const did = feature.properties.pc11_district_id;
+  layer.on({
+    mouseover: (e) => { if (activeLayer !== e.target) highlightLayer(e.target); },
+    mouseout: (e) => { if (activeLayer !== e.target) resetLayerStyle(e.target); },
+    click: () => selectDistrict(did, layer),
+  });
+}
+
+// ---------- Legend ----------
+function renderLegend(){
+  const meta = variablesMeta[currentIndicator];
+  document.getElementById('legendTitle').textContent = meta.label;
+  const grad = `linear-gradient(to right, ${COLORS.join(',')})`;
+  document.getElementById('legendGradient').style.background = grad;
+  const lo = currentBreaks[0], hi = currentBreaks[currentBreaks.length-1];
+  const mid = currentBreaks[Math.floor(currentBreaks.length/2)];
+  document.getElementById('legendTicks').innerHTML =
+    `<span>${fmtValue(currentIndicator, lo)}${unitSuffix(currentIndicator)}</span><span>${fmtValue(currentIndicator, mid)}${unitSuffix(currentIndicator)}</span><span>${fmtValue(currentIndicator, hi)}${unitSuffix(currentIndicator)}</span>`;
+}
+
+// ---------- Aggregate stats ----------
+function valuesFor(indicator, year){ return indicatorIndex[indicator]?.[year] || {}; }
+
+function nationalStats(){
+  const totalVals = Object.values(valuesFor('total_crimes', 2015));
+  const curVals = Object.values(valuesFor(currentIndicator, currentYear));
+  const sum = totalVals.reduce((a,b)=>a+b,0);
+  const avg = curVals.length ? curVals.reduce((a,b)=>a+b,0)/curVals.length : null;
+  return { totalCrimes: sum, curAvg: avg, reporting: curVals.length };
+}
+
+function rankedList(indicator, year, n=5){
+  const vals = valuesFor(indicator, year);
+  const entries = Object.entries(vals).filter(([did]) => !MERGE_SUPPRESS[did]);
+  entries.sort((a,b) => b[1]-a[1]);
+  const label = did => MERGE_LABEL_OVERRIDE[did] || districtMeta[did].name;
+  const top = entries.slice(0, n).map(([did,v]) => ({ did, name:label(did), state:districtMeta[did].state, value:v }));
+  const bottom = entries.slice(-n).reverse().map(([did,v]) => ({ did, name:label(did), state:districtMeta[did].state, value:v }));
+  return { top, bottom };
+}
+
+function nationalComposition(year){
+  const sums = {}; COMP_CATEGORIES.forEach(c => sums[c.id]=0);
+  let n = 0;
+  Object.entries(districtCompByYear).forEach(([did, byYear]) => {
+    const comp = byYear[year];
+    if (!comp) return;
+    comp.forEach(c => sums[c.catId] += c.value);
+    n++;
+  });
+  if (n===0) return null;
+  return COMP_CATEGORIES.map(c => ({ catId:c.id, value: Math.round((sums[c.id]/n)*10)/10 }));
+}
+
+// ---------- Sidebar rendering ----------
+function renderComposition(comp){
+  let bar = `<div class="comp-bar">`;
+  comp.forEach(c => { const cat = COMP_CATEGORIES.find(x=>x.id===c.catId); bar += `<div style="width:${c.value}%; background:${cat.color};" title="${cat.label}: ${c.value}%"></div>`; });
+  bar += `</div>`;
+  let legend = '';
+  comp.forEach(c => { const cat = COMP_CATEGORIES.find(x=>x.id===c.catId); legend += `<div class="comp-legend-row"><span class="comp-swatch" style="background:${cat.color}"></span><span>${cat.label}</span><span class="comp-pct">${c.value}%</span></div>`; });
+  return bar + legend;
+}
+
+function renderSparkline(series){
+  const w = 300, h = 60, pad = 6;
+  const vals = series.map(s=>s.value);
+  const min = Math.min(...vals), max = Math.max(...vals), range = (max-min)||1;
+  const stepX = (w-pad*2)/(series.length-1);
+  const pts = series.map((s,i)=>[pad+i*stepX, h-pad-((s.value-min)/range)*(h-pad*2)]);
+  const path = pts.map(p=>p.join(',')).join(' ');
+  const dots = pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#1F5590"><title>${series[i].year}: ${fmtValue(currentIndicator, series[i].value)}</title></circle>`).join('');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;"><polyline points="${path}" fill="none" stroke="#5E9FD6" stroke-width="2"/>${dots}</svg>
+  <div class="trend-note">${series[0].year} – ${series[series.length-1].year}</div>`;
+}
+
+function renderRankList(items, unit){
+  return `<ul class="rank-list">` + items.map(it =>
+    `<li><span><span class="rank-name">${it.name}</span><span class="rank-state">${it.state}</span></span><span class="rank-val">${fmtValue(currentIndicator, it.value)}${unit}</span></li>`
+  ).join('') + `</ul>`;
+}
+
+function renderSidebar(){
+  const sb = document.getElementById('sidebar');
+  const meta = variablesMeta[currentIndicator];
+  const unit = unitSuffix(currentIndicator);
+
+  if (!selectedDistrict){
+    const stats = nationalStats();
+    const rank = rankedList(currentIndicator, currentYear, 5);
+    const comp = nationalComposition(currentYear) || nationalComposition(2015);
+    sb.innerHTML = `
+      <div class="side-card">
+        <h2>India — national snapshot</h2>
+        <div class="side-sub">${stats.reporting} districts with data · ${currentYear} · click a district to drill in</div>
+        <div class="stat-tiles">
+          <div class="stat-tile"><div class="stat-num">${Number(stats.totalCrimes).toLocaleString('en-IN')}</div><div class="stat-label">Total Crimes 2015</div></div>
+          <div class="stat-tile"><div class="stat-num">${fmtValue(currentIndicator, stats.curAvg)}</div><div class="stat-label">${meta.shortLabel} avg</div></div>
+          <div class="stat-tile"><div class="stat-num">${stats.reporting}</div><div class="stat-label">Districts Reporting</div></div>
+        </div>
+        <div class="section-label">Crime-type breakdown — national avg</div>
+        <div class="note-box">Sample data</div>
+        ${comp ? renderComposition(comp) : '<div class="trend-note">No data.</div>'}
+        <div class="section-label">${meta.label} — highest &amp; lowest districts (${currentYear})</div>
+        ${!meta.isReal ? '<div class="note-box">Sample data</div>' : ''}
+        ${renderRankList(rank.top, unit)}
+        <div class="rank-sep">···</div>
+        ${renderRankList(rank.bottom, unit)}
+      </div>
+      <div class="side-card">
+        <div class="section-label">Reading the map</div>
+        <div class="reading-text">Colour encodes the selected indicator for the selected year — see the scale under the map. Grey districts have no data — never zero. Open a district for its trend and crime-type breakdown, or use Priority Views to jump straight to a specific cut of the data.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const dm = districtMeta[selectedDistrict];
+  const value = valuesFor(currentIndicator, currentYear)[selectedDistrict];
+  const allVals = Object.values(valuesFor(currentIndicator, currentYear)).sort((a,b)=>a-b);
+  const natMedian = median(allVals);
+  const stateVals = Object.entries(valuesFor(currentIndicator, currentYear))
+    .filter(([did]) => stateOfDistrict[did] === dm.state).map(([,v])=>v);
+  const stateAvg = stateVals.length ? stateVals.reduce((a,b)=>a+b,0)/stateVals.length : null;
+
+  const series = (districtSeries[selectedDistrict] && districtSeries[selectedDistrict][currentIndicator]) || [];
+  const comp = (districtCompByYear[selectedDistrict] && districtCompByYear[selectedDistrict][currentYear])
+            || (districtCompByYear[selectedDistrict] && districtCompByYear[selectedDistrict][2015]);
+
+  let compareHtml = '';
+  if (value != null && natMedian != null){
+    const diff = natMedian ? Math.round(((value-natMedian)/natMedian)*100) : null;
+    compareHtml += `<div class="compare-line">vs. national median (<b>${fmtValue(currentIndicator,natMedian)}${unit}</b>): <b>${diff>0?'+':''}${diff}%</b></div>`;
+  }
+  if (value != null && stateAvg != null){
+    const diffS = stateAvg ? Math.round(((value-stateAvg)/stateAvg)*100) : null;
+    compareHtml += `<div class="compare-line">vs. ${dm.state} avg (<b>${fmtValue(currentIndicator,stateAvg)}${unit}</b>): <b>${diffS>0?'+':''}${diffS}%</b></div>`;
+  }
+
+  sb.innerHTML = `
+    <div class="side-card">
+      <span class="back-link" id="backLink">← National snapshot</span>
+      <h2>${dm.name}</h2>
+      <div class="side-sub">${dm.state}</div>
+      <div class="stat-tiles" style="grid-template-columns:1fr;">
+        <div class="stat-tile">
+          <div class="stat-num">${fmtValue(currentIndicator, value)}${unit}</div>
+          <div class="stat-label">${meta.label} (${currentYear})</div>
+          ${!meta.isReal ? '<div class="note-box" style="margin-top:6px;">Placeholder value</div>' : ''}
+          ${compareHtml}
+        </div>
+      </div>
+      <div class="section-label">Trend</div>
+      ${!meta.isReal ? '<div class="note-box">Sample data</div>' : ''}
+      ${series.length>=2 ? renderSparkline(series) : (series.length===1 ? `<div class="trend-note">Only one year available (${series[0].year}).</div>` : '<div class="trend-note">No data.</div>')}
+      <div class="section-label">Crime-type breakdown</div>
+      <div class="note-box">Sample data</div>
+      ${comp ? renderComposition(comp) : '<div class="trend-note">No data.</div>'}
+    </div>
+  `;
+  document.getElementById('backLink').addEventListener('click', clearSelection);
+}
+
+// ---------- Controls ----------
+function availableYears(varId){ return Object.keys(indicatorIndex[varId] || {}).map(Number).sort((a,b)=>a-b); }
+
+function refreshAll(){
+  const vals = Object.values(valuesFor(currentIndicator, currentYear));
+  currentBreaks = computeBreaks(vals);
+  if (geoLayer) geoLayer.setStyle(styleFeature);
+  renderLegend();
+  renderSidebar();
+}
+
+function buildIndicatorPills(){
+  const wrap = document.getElementById('indicatorPills');
+  wrap.innerHTML = mapVariables.map(v => `<button class="pill" data-id="${v.id}">${v.label}${v.isReal ? '' : ' (sample)'}</button>`).join('');
+  wrap.querySelectorAll('.pill').forEach(btn => btn.addEventListener('click', () => {
+    currentIndicator = btn.dataset.id;
+    buildYearSlider();
+    updateActivePills();
+    refreshAll();
+  }));
+  updateActivePills();
+}
+function buildPriorityPills(){
+  const wrap = document.getElementById('priorityPills');
+  wrap.innerHTML = PRIORITY_VIEWS.map(pv => `<button class="pill priority" data-id="${pv.indicator}">${pv.label}</button>`).join('');
+  wrap.querySelectorAll('.pill').forEach(btn => btn.addEventListener('click', () => {
+    currentIndicator = btn.dataset.id;
+    buildYearSlider();
+    updateActivePills();
+    refreshAll();
+  }));
+}
+function updateActivePills(){
+  document.querySelectorAll('#indicatorPills .pill').forEach(b => b.classList.toggle('active', b.dataset.id===currentIndicator));
+  document.querySelectorAll('#priorityPills .pill').forEach(b => b.classList.toggle('active', b.dataset.id===currentIndicator));
+}
+
+function buildYearSlider(){
+  const years = availableYears(currentIndicator);
+  const slider = document.getElementById('yearSlider');
+  slider.min = 0; slider.max = years.length-1; slider.step = 1;
+  const idx = years.includes(currentYear) ? years.indexOf(currentYear) : years.length-1;
+  slider.value = idx;
+  currentYear = years[idx];
+  document.getElementById('yearLabel').textContent = currentYear;
+  slider.disabled = years.length <= 1;
+  slider.oninput = () => {
+    currentYear = years[Number(slider.value)];
+    document.getElementById('yearLabel').textContent = currentYear;
+    refreshAll();
+  };
+}
+
+// ---------- Search ----------
+let searchIndex = [];
+function buildSearchIndex(){
+  searchIndex = Object.entries(districtMeta).map(([did,m]) => ({ did, name:m.name, state:m.state }));
+  geoLayer.eachLayer(l => { const e = searchIndex.find(s=>s.did===l.feature.properties.pc11_district_id); if (e) e.layer = l; });
+}
+const searchInput = document.getElementById('districtSearch');
+const resultsBox = document.getElementById('searchResults');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (q.length<1){ resultsBox.style.display='none'; return; }
+  const matches = searchIndex.filter(s=>s.name.toLowerCase().includes(q)).slice(0,8);
+  if (!matches.length){ resultsBox.style.display='none'; return; }
+  resultsBox.innerHTML = matches.map((m,i)=>`<div data-idx="${i}">${m.name} <span class="state-tag">— ${m.state}</span></div>`).join('');
+  resultsBox.style.display='block';
+  resultsBox.querySelectorAll('div').forEach((el,i)=>el.addEventListener('click', ()=>{
+    selectDistrict(matches[i].did, matches[i].layer);
+    resultsBox.style.display='none'; searchInput.value = matches[i].name;
+  }));
+});
+document.addEventListener('click', (e) => { if (!e.target.closest('.search-group')) resultsBox.style.display='none'; });
+
+// ---------- Definitions & footer ----------
+function renderDefinitions(){
+  const grid = document.getElementById('defsGrid');
+  const items = [
+    { name:'Total IPC Crimes', color:'#3679B8', text:'Total cognizable crimes registered under the Indian Penal Code in the district, 2015.', real:true },
+    { name:'Conviction Rate', color:'#3679B8', text:'Share of tried cases ending in conviction.', real:false },
+    { name:'Arrest / Chargesheet Rate', color:'#3679B8', text:'Share of registered cases where police filed a chargesheet.', real:false },
+    { name:'Police Strength', color:'#3679B8', text:'Sanctioned police personnel per 100,000 population.', real:false },
+    { name:'Violent Crime', color:'#A24E3B', text:'Share of total crimes classified as violent offences.', real:false },
+    { name:'Property Crime', color:'#3679B8', text:'Share of total crimes classified as property offences.', real:false },
+    { name:'Crime Against Women', color:'#7C5FA8', text:'Share of total crimes classified under crimes against women.', real:false },
+    { name:'Economic Offences', color:'#3E8E6F', text:'Share of total crimes classified as economic offences.', real:false },
+    { name:'Other IPC Crimes', color:'#C9A227', text:'Remaining IPC crime categories not covered above.', real:false },
+  ];
+  grid.innerHTML = items.map(it => `
+    <div class="def-item">
+      <div class="def-name"><span class="def-dot" style="background:${it.color}"></span>${it.name}</div>
+      <div class="def-text">${it.text}</div>
+      ${it.real ? '' : '<div class="def-flag">PLACEHOLDER — pending real data</div>'}
+    </div>
+  `).join('');
+
+  document.getElementById('footerBar').innerHTML = `
+    <span><b>Source:</b> NCRB, Crime in India 2015 (total crimes); other indicators are placeholder pending release</span>
+    <span><b>Geography:</b> 2011 Census districts (SHRUG / DataMeet)</span>
+    <span><b>603/640</b> districts joined</span>
+  `;
+  document.getElementById('methodText').innerHTML = `
+    <p><b>Method.</b> District-level NCRB crime counts were matched to 2011 Census (pc11) district codes: 76% by exact name match, a further 18% by spelling-variant matching (e.g. "Bathinda"/"Bhatinda"), and 8% via manually verified aliases and renames (e.g. "Trivandrum" → Thiruvananthapuram). Telangana's 2015 district figures are reported against undivided Andhra Pradesh boundaries, matching the geography's 2011 Census vintage.</p>
+    <p>Three NCRB entries report a combined figure for two 2011-Census districts and are mapped to both: Mumbai City + Suburban, undivided Midnapore (Paschim + Purba), and North &amp; Middle + South Andaman. Rankings show these once, not twice.</p>
+    <p><b>Coverage gaps.</b> 37 districts have no separate 2015 figure — mostly districts created by splitting an older district sometime between 2001–2011, whose crimes NCRB appears to still report under the parent district's name. Bihar's Gaya and Jharkhand's Hazaribagh are unexplained gaps in the source file itself.</p>
+    <p><b>Placeholder data.</b> Conviction rate, arrest/chargesheet rate, police strength, and the crime-type breakdown are synthetic values standing in for real data to be added later — flagged throughout the interface. Only Total IPC Crimes (2015) reflects actual NCRB figures.</p>
+  `;
+}
+
+// ---------- Load ----------
+Promise.all([
+  fetch('data/districts.geojson').then(r=>{ if(!r.ok) throw new Error('districts.geojson: '+r.status); return r.json(); }),
+  fetch('data/indicators.json').then(r=>{ if(!r.ok) throw new Error('indicators.json: '+r.status); return r.json(); }),
+  fetch('data/variables.json').then(r=>{ if(!r.ok) throw new Error('variables.json: '+r.status); return r.json(); }),
+]).then(([geo, records, vars]) => {
+  vars.forEach(v => variablesMeta[v.id]=v);
+  mapVariables = vars.filter(v => v.group==='map');
+
+  geo.features.forEach(ft => {
+    const p = ft.properties;
+    districtMeta[p.pc11_district_id] = { name:p.district_name, state:p.state_name };
+    stateOfDistrict[p.pc11_district_id] = p.state_name;
+  });
+
+  records.forEach(r => {
+    if (!indicatorIndex[r.variable]) indicatorIndex[r.variable]={};
+    if (!indicatorIndex[r.variable][r.year]) indicatorIndex[r.variable][r.year]={};
+    indicatorIndex[r.variable][r.year][r.district_id]=r.value;
+    if (r.variable.startsWith('crimetype_')){
+      if (!districtCompByYear[r.district_id]) districtCompByYear[r.district_id]={};
+      if (!districtCompByYear[r.district_id][r.year]) districtCompByYear[r.district_id][r.year]=[];
+      districtCompByYear[r.district_id][r.year].push({ catId:r.variable, value:r.value });
+    } else {
+      if (!districtSeries[r.district_id]) districtSeries[r.district_id]={};
+      if (!districtSeries[r.district_id][r.variable]) districtSeries[r.district_id][r.variable]=[];
+      districtSeries[r.district_id][r.variable].push({ year:r.year, value:r.value });
+    }
+  });
+  Object.values(districtSeries).forEach(byVar => Object.values(byVar).forEach(arr => arr.sort((a,b)=>a.year-b.year)));
+
+  geoLayer = L.geoJSON(geo, { style: styleFeature, onEachFeature }).addTo(map);
+  buildSearchIndex();
+  buildIndicatorPills();
+  buildYearSlider();
+  buildPriorityPills();
+  renderDefinitions();
+  refreshAll();
+}).catch(err => {
+  const msg = `<strong>Could not load map data.</strong><br><br>${err.message}<br><br>
+    This page fetches files from a <code>data/</code> subfolder next to it. Browsers block local <code>fetch()</code> from a bare <code>file://</code> path —
+    serve this folder locally (<code>python3 -m http.server</code>) or via GitHub Pages.`;
+  document.getElementById('map').innerHTML = `<div style="padding:30px;font-family:'IBM Plex Sans',sans-serif;color:#8A2B2B;font-size:13px;">${msg}</div>`;
+  document.getElementById('sidebar').innerHTML = `<div class="side-card"><h2>India — national snapshot</h2>
+    <div style="font-family:'IBM Plex Sans',sans-serif;color:#8A2B2B;font-size:12.5px;line-height:1.6;margin-top:10px;">
+    Couldn't load — see the map panel for details.</div></div>`;
+});
+
+</script>
+</body>
+</html>
