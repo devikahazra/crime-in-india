@@ -1,0 +1,160 @@
+{
+ "categories": [
+  {
+   "id": "ipc",
+   "label": "IPC",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "sll",
+   "label": "SLL",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "women",
+   "label": "Against Women",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "children",
+   "label": "Against Children",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "sc",
+   "label": "Against SCs",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "st",
+   "label": "Against STs",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "cyber",
+   "label": "Cyber",
+   "years_available": [
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "juvipc",
+   "label": "Juveniles (IPC)",
+   "years_available": [
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "juvsll",
+   "label": "Juveniles (SLL)",
+   "years_available": [
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "missing",
+   "label": "Missing Persons",
+   "years_available": [
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "violent",
+   "label": "Violent Crimes",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "property",
+   "label": "Property Crimes",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "economic",
+   "label": "Economic Offences",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  },
+  {
+   "id": "public_state",
+   "label": "Against Public & State",
+   "years_available": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019
+   ]
+  }
+ ]
+}
