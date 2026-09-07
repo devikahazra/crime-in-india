@@ -202,6 +202,21 @@
   .site-byline .line2 { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
   .site-byline a { color: var(--accent2); text-decoration: none; }
   .site-byline a:hover { text-decoration: underline; }
+
+  .contact-name-email { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 14px 14px 32px; }
+    header.masthead h1 { font-size: 22px; }
+    .controls-grid { grid-template-columns: 1fr; gap: 16px; }
+    .yearfind-grid { grid-template-columns: 1fr; gap: 16px; }
+    .main-grid { grid-template-columns: 1fr; }
+    .statcards { grid-template-columns: 1fr 1fr; }
+    #map { aspect-ratio: 0.85 / 1; }
+    .footer-panel { grid-template-columns: 1fr; }
+    table.ranking td { font-size: 12px; }
+    .contact-name-email { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -339,7 +354,7 @@
     <form action="https://formspree.io/f/xeaqrrlr" method="POST" id="contactForm">
       <input type="text" name="_gotcha" style="display:none">
       <input type="hidden" name="_subject" value="India Crime Atlas — question">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+      <div class="contact-name-email">
         <div>
           <p class="control-label">Name *</p>
           <input type="text" name="name" required>
